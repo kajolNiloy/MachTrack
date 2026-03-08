@@ -8,7 +8,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (!user) return <Navigate to="/login" />;
 
-  if (!allowedRoles.includes(role)) return <Navigate to="/" />;
+  if (!allowedRoles.includes(role)) return <div style={{ padding: '40px', fontFamily: 'Arial', textAlign: 'center' }}><h2>Access Denied</h2><p>You do not have permission to access this page.</p></div>;
 
   return children;
 };

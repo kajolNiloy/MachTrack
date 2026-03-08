@@ -8,10 +8,17 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-  const { user, logout } = useAuth();
+  const { user, logout, role, loading } = useAuth();
 
   return (
     <>
+      {user && (
+        <div style={{ position: 'fixed', top: 0, left: 0, background: 'yellow', padding: '10px', zIndex: 1000 }}>
+          Email: {user.email}<br/>
+          Role: {role || 'null'}<br/>
+          Loading: {loading ? 'true' : 'false'}
+        </div>
+      )}
       {user && (
         <div style={{ padding: '10px', background: '#f0f0f0', textAlign: 'right' }}>
           <button

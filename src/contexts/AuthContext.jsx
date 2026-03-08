@@ -11,20 +11,24 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      console.log('GetUser user id:', data.user?.id);
+      console.log('GetUser user email:', data.user?.email);
+      setUser(data.user ?? null);
+      if (data.user) {
+        fetchProfile(data.user.id);
       } else {
         setRole(null);
         setLoading(false);
       }
     };
 
-    getSession();
+    getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change - user id:', session?.user?.id);
+      console.log('Auth state change - user email:', session?.user?.email);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -38,7 +42,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId) => {
+    console.log('Fetching profile for userId:', userId);
     const { data, error } = await supabase.from('profiles').select('role').eq('id', userId).single();
+    console.log('Fetched profile:', data);
     if (error) {
       console.error('Error fetching profile:', error);
       setRole(null);
