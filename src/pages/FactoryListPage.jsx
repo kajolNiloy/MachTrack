@@ -27,23 +27,21 @@ function FactoryListPage() {
   return (
     <div
       style={{
-        padding: "40px",
-        fontFamily: "Arial",
-        backgroundColor: "#f5f7fa",
-        minHeight: "100vh"
+        backgroundColor: "#f8fafc",
+        minHeight: "100vh",
+        padding: "24px"
       }}
     >
-      <h1>MachTrack</h1>
-      <p>Factory Parts Inventory System</p>
+      <h1 style={{ margin: "0 0 8px 0", fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>MachTrack</h1>
+      <p style={{ margin: "0 0 32px 0", fontSize: "0.875rem", color: "#6b7280" }}>Factory Parts Inventory System</p>
 
-      <h2 style={{ marginTop: "30px" }}>Factories</h2>
+      <h2 style={{ margin: "0 0 24px 0", fontSize: "1.5rem", fontWeight: "600", color: "#1f2937", borderBottom: "1px solid #e5e7eb", paddingBottom: "8px" }}>Factories</h2>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "20px",
-          marginTop: "20px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "24px"
         }}
       >
         {factories.map((factory) => (
@@ -52,15 +50,16 @@ function FactoryListPage() {
             onClick={() => navigate(`/factory/${factory.id}`)}
             style={{
               background: "white",
-              padding: "20px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              padding: "24px",
+              borderRadius: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              border: "1px solid #e5e7eb",
               cursor: "pointer"
             }}
           >
-            <h3>{factory.name}</h3>
-            <p>Code: {factory.code}</p>
-            <p>Location: {factory.location}</p>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: "1.25rem", fontWeight: "600", color: "#1f2937" }}>{factory.name}</h3>
+            <p style={{ margin: "4px 0", fontSize: "0.875rem", color: "#6b7280" }}>Code: {factory.code}</p>
+            <p style={{ margin: "4px 0", fontSize: "0.875rem", color: "#6b7280" }}>Location: {factory.location}</p>
           </div>
         ))}
       </div>
