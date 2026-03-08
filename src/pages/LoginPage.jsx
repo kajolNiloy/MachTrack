@@ -21,8 +21,6 @@ function LoginPage() {
     const { error } = await login(email, password);
     if (error) {
       setError(error.message);
-    } else {
-      navigate('/');
     }
   };
 
