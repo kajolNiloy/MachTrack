@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import AppLayout from "../components/AppLayout";
 import { useDeviceType } from "../hooks/useDeviceType";
-import { colors, spacing, typography } from "../constants/designTokens";
+import { colors, spacing } from "../constants/designTokens";
 import { getDisplayFactoryName } from "../lib/factoryNames";
 
 function FactoryListPage() {
@@ -12,6 +13,7 @@ function FactoryListPage() {
   const device = useDeviceType();
   const isMobile = device === "mobile";
   const isDesktop = device === "desktop";
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchFactories();
@@ -44,10 +46,10 @@ function FactoryListPage() {
       }}>
         <div>
           <h2 style={{ margin: 0, fontSize: isDesktop ? '1.5rem' : '1.2rem', fontWeight: '700', color: colors.darkText }}>
-            Factories
+            {t('factories')}
           </h2>
           <p style={{ margin: `4px 0 0 0`, fontSize: '0.85rem', color: colors.lightText }}>
-            {factories.length} {factories.length === 1 ? 'factory' : 'factories'} found
+            {factories.length} {factories.length === 1 ? t('factory_found_single') : t('factories_found')}
           </p>
         </div>
       </div>
@@ -116,7 +118,7 @@ function FactoryListPage() {
               paddingLeft: isDesktop ? '64px' : '56px',
             }}>
               <p style={{ margin: 0, fontSize: '0.8rem', color: colors.lightText }}>
-                📋 Code: <strong style={{ color: colors.mediumText }}>{factory.code}</strong>
+                📋 {t('code')}: <strong style={{ color: colors.mediumText }}>{factory.code}</strong>
               </p>
               <p style={{ margin: 0, fontSize: '0.8rem', color: colors.lightText }}>
                 📍 {factory.location}
@@ -132,7 +134,7 @@ function FactoryListPage() {
               fontSize: '0.85rem',
               fontWeight: '600',
             }}>
-              View Details →
+              {t('view_details')} →
             </div>
           </div>
         ))}
@@ -145,7 +147,7 @@ function FactoryListPage() {
           color: colors.lightText,
           fontSize: '0.9rem',
         }}>
-          No factories found.
+          {t('no_factories')}
         </div>
       )}
     </AppLayout>

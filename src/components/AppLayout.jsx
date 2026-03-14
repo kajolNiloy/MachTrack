@@ -2,19 +2,46 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDeviceType } from '../hooks/useDeviceType';
+import { useTranslation } from 'react-i18next';
 import Button from './Button';
 import { colors, spacing } from '../constants/designTokens';
 
 const navLinks = [
-  { to: '/', label: 'Factories', icon: '🏭' },
-  { to: '/scan', label: 'Scan', icon: '📷' },
-  { to: '/troubleshoot', label: 'Troubleshoot', icon: '🔧' },
+  { to: '/', labelKey: 'factories', icon: '🏭' },
+  { to: '/scan', labelKey: 'scan', icon: '📷' },
+  { to: '/troubleshoot', labelKey: 'troubleshoot', icon: '🔧' },
 ];
+
+function LanguageSwitcher() {
+  const { i18n } = useTranslation();
+  return (
+    <select
+      value={i18n.language}
+      onChange={(e) => i18n.changeLanguage(e.target.value)}
+      style={{
+        fontSize: '0.85rem',
+        padding: '6px 10px',
+        borderRadius: '6px',
+        border: `1px solid ${colors.border}`,
+        cursor: 'pointer',
+        backgroundColor: colors.white,
+        color: colors.darkText,
+        fontWeight: '500',
+      }}
+    >
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="fil">Filipino</option>
+      <option value="bn">বাংলা</option>   {/* ← add this */}
+    </select>
+  );
+}
 
 function AppLayout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const device = useDeviceType();
+  const { t } = useTranslation();
   const isDesktop = device === 'desktop';
 
   const isActive = (path) => {
@@ -23,7 +50,6 @@ function AppLayout({ children }) {
   };
 
   if (isDesktop) {
-    // ── DESKTOP LAYOUT ──────────────────────────────────────────
     return (
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: colors.background }}>
 
@@ -81,7 +107,7 @@ function AppLayout({ children }) {
                 }}
               >
                 <span style={{ fontSize: '1.1rem' }}>{link.icon}</span>
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </nav>
@@ -103,7 +129,7 @@ function AppLayout({ children }) {
                 {user.email}
               </p>
               <Button variant="danger" size="sm" onClick={logout} style={{ width: '100%' }}>
-                Logout
+                {t('logout')}
               </Button>
             </div>
           )}
@@ -125,9 +151,12 @@ function AppLayout({ children }) {
             zIndex: 50,
           }}>
             <h1 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: colors.lightText }}>
-              {navLinks.find(l => isActive(l.to))?.label || 'MachTrack'}
+              {t(navLinks.find(l => isActive(l.to))?.labelKey) || 'MachTrack'}
             </h1>
-            <span style={{ fontSize: '0.8rem', color: colors.lightText }}>{user?.email}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <LanguageSwitcher />
+              <span style={{ fontSize: '0.8rem', color: colors.lightText }}>{user?.email}</span>
+            </div>
           </header>
 
           <main style={{ flex: 1, padding: spacing.xl }}>
@@ -166,6 +195,7 @@ function AppLayout({ children }) {
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: colors.darkText }}>MachTrack</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+          <LanguageSwitcher />
           {user && (
             <span style={{
               fontSize: '0.75rem', color: colors.lightText,
@@ -175,7 +205,11 @@ function AppLayout({ children }) {
               {user.email}
             </span>
           )}
-          {user && <Button variant="danger" size="sm" onClick={logout}>Logout</Button>}
+          {user && (
+            <Button variant="danger" size="sm" onClick={logout}>
+              {t('logout')}
+            </Button>
+          )}
         </div>
       </header>
 
@@ -216,7 +250,7 @@ function AppLayout({ children }) {
             }}
           >
             <span style={{ fontSize: '1.4rem' }}>{link.icon}</span>
-            {link.label}
+            {t(link.labelKey)}
           </Link>
         ))}
       </nav>

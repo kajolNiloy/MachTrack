@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { useTranslation } from "react-i18next";
 import AppLayout from "../components/AppLayout";
 import { useDeviceType } from "../hooks/useDeviceType";
 import Input from "../components/Input";
@@ -55,6 +56,7 @@ function FactoryDetailPage() {
   const device = useDeviceType();
   const isDesktop = device === 'desktop';
   const isMobile = device === 'mobile';
+  const { t } = useTranslation();
 
   const [factory, setFactory] = useState(null);
   const [machines, setMachines] = useState([]);
@@ -102,7 +104,6 @@ function FactoryDetailPage() {
   const [editQrCode, setEditQrCode] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  // ── Consumables state ────────────────────────────────────────
   const [consumables, setConsumables] = useState([]);
   const [consumableSearch, setConsumableSearch] = useState("");
   const [showAddConsumableForm, setShowAddConsumableForm] = useState(false);
@@ -164,7 +165,6 @@ function FactoryDetailPage() {
     if (!error) setConsumables(data);
   }
 
-  // ── Parts handlers ───────────────────────────────────────────
   async function handleSavePart() {
     if (!partCode || !partName) { alert("Please enter Part Code and Part Name"); return; }
     const { error } = await supabase.from("parts").insert([{
@@ -241,7 +241,6 @@ function FactoryDetailPage() {
     fetchParts(); fetchTransactions();
   }
 
-  // ── Consumables handlers ─────────────────────────────────────
   async function handleSaveConsumable() {
     if (!cName || !cMachineId) { alert("Please enter name and select a machine"); return; }
     const { error } = await supabase.from("consumables").insert([{
@@ -396,7 +395,7 @@ function FactoryDetailPage() {
   return (
     <AppLayout>
       {!factory ? (
-        <p style={{ color: colors.lightText }}>Loading factory...</p>
+        <p style={{ color: colors.lightText }}>{t('loading_factory')}</p>
       ) : (
         <>
           {/* Factory Header */}
@@ -417,20 +416,20 @@ function FactoryDetailPage() {
                 {factory.name}
               </h1>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: colors.lightText }}>
-                Code: {factory.code} · {factory.location}
+                {t('code')}: {factory.code} · {factory.location}
               </p>
             </div>
           </div>
 
-          {/* ── MACHINES ── */}
+          {/* MACHINES */}
           <SectionTitle isDesktop={isDesktop} action={
             isKurachiFactory && (
               <Button variant="primary" size="md" onClick={handleAddKurachiMachines} disabled={isAddingKurachiMachines}>
-                {isAddingKurachiMachines ? "Adding..." : "Add Kurachi Machines"}
+                {isAddingKurachiMachines ? t('adding') : t('add_kurachi_machines')}
               </Button>
             )
           }>
-            Machines ({machines.length})
+            {t('machines')} ({machines.length})
           </SectionTitle>
           <div style={{
             display: 'grid',
@@ -449,32 +448,32 @@ function FactoryDetailPage() {
             ))}
           </div>
 
-          {/* ── PARTS INVENTORY ── */}
+          {/* PARTS INVENTORY */}
           <SectionTitle isDesktop={isDesktop} action={
             <Button variant="primary" size="md" onClick={() => { setShowAddPartForm(!showAddPartForm); closeEditPartForm(); }}>
-              {showAddPartForm ? 'Cancel' : '+ Add Part'}
+              {showAddPartForm ? t('cancel') : t('add_part')}
             </Button>
           }>
-            Parts Inventory ({filteredParts.length})
+            {t('parts_inventory')} ({filteredParts.length})
           </SectionTitle>
           <div style={{ marginBottom: spacing.lg }}>
-            <Input type="text" placeholder="Search part name or code..." value={searchTerm}
+            <Input type="text" placeholder={t('search_part')} value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)} style={{ maxWidth: isDesktop ? '350px' : '100%' }} />
           </div>
 
           {showAddPartForm && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.lg} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Add New Part</h3>
+              <h3 style={{ margin: `0 0 ${spacing.lg} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('add_new_part')}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
-                <Input type="text" placeholder="Part Code" value={partCode} onChange={(e) => setPartCode(e.target.value)} />
-                <Input type="text" placeholder="Part Name" value={partName} onChange={(e) => setPartName(e.target.value)} />
-                <Input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
-                <Input type="number" placeholder="Current Stock" value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} />
-                <Input type="number" placeholder="Minimum Stock" value={minStock} onChange={(e) => setMinStock(e.target.value)} />
-                <Input type="text" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
+                <Input type="text" placeholder={t('part_code')} value={partCode} onChange={(e) => setPartCode(e.target.value)} />
+                <Input type="text" placeholder={t('part_name')} value={partName} onChange={(e) => setPartName(e.target.value)} />
+                <Input type="text" placeholder={t('category')} value={category} onChange={(e) => setCategory(e.target.value)} />
+                <Input type="number" placeholder={t('current_stock')} value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} />
+                <Input type="number" placeholder={t('min_stock')} value={minStock} onChange={(e) => setMinStock(e.target.value)} />
+                <Input type="text" placeholder={t('location')} value={location} onChange={(e) => setLocation(e.target.value)} />
                 <Input type="text" placeholder="QR Code" value={qrCode} onChange={(e) => setQrCode(e.target.value)} />
               </div>
-              <Button variant="success" size="md" onClick={handleSavePart} style={{ marginTop: spacing.lg }}>Save Part</Button>
+              <Button variant="success" size="md" onClick={handleSavePart} style={{ marginTop: spacing.lg }}>{t('save_part')}</Button>
             </div>
           )}
 
@@ -482,73 +481,73 @@ function FactoryDetailPage() {
             <div style={{ ...formCard, border: `2px solid ${colors.primary}`, backgroundColor: '#fafcff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
                 <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>
-                  ✏️ Editing — <span style={{ color: colors.primary }}>{editingPart.part_name}</span>
+                  ✏️ {t('edit')} — <span style={{ color: colors.primary }}>{editingPart.part_name}</span>
                 </h3>
                 <button onClick={closeEditPartForm} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: colors.lightText }}>✕</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
-                <Input type="text" placeholder="Part Code" value={editPartCode} onChange={(e) => setEditPartCode(e.target.value)} />
-                <Input type="text" placeholder="Part Name" value={editPartName} onChange={(e) => setEditPartName(e.target.value)} />
-                <Input type="text" placeholder="Category" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
-                <Input type="number" placeholder="Current Stock" value={editCurrentStock} onChange={(e) => setEditCurrentStock(e.target.value)} />
-                <Input type="number" placeholder="Minimum Stock" value={editMinStock} onChange={(e) => setEditMinStock(e.target.value)} />
-                <Input type="text" placeholder="Location" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
+                <Input type="text" placeholder={t('part_code')} value={editPartCode} onChange={(e) => setEditPartCode(e.target.value)} />
+                <Input type="text" placeholder={t('part_name')} value={editPartName} onChange={(e) => setEditPartName(e.target.value)} />
+                <Input type="text" placeholder={t('category')} value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+                <Input type="number" placeholder={t('current_stock')} value={editCurrentStock} onChange={(e) => setEditCurrentStock(e.target.value)} />
+                <Input type="number" placeholder={t('min_stock')} value={editMinStock} onChange={(e) => setEditMinStock(e.target.value)} />
+                <Input type="text" placeholder={t('location')} value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
                 <Input type="text" placeholder="QR Code" value={editQrCode} onChange={(e) => setEditQrCode(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
                 <Button variant="primary" size="md" onClick={handleSaveEditPart} disabled={isSavingEdit}>
-                  {isSavingEdit ? 'Saving...' : 'Save Changes'}
+                  {isSavingEdit ? t('saving') : t('save_changes')}
                 </Button>
-                <Button variant="secondary" size="md" onClick={closeEditPartForm}>Cancel</Button>
+                <Button variant="secondary" size="md" onClick={closeEditPartForm}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
           {showUsePartForm && selectedPart && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Use Part</h3>
+              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('use_part')}</h3>
               <p style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '0.9rem', color: colors.darkText }}>
-                <strong>{selectedPart.part_name}</strong> — Stock: {selectedPart.current_stock}
+                <strong>{selectedPart.part_name}</strong> — {t('stock')}: {selectedPart.current_stock}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
                 <select value={selectedMachineId} onChange={(e) => setSelectedMachineId(e.target.value)} style={selectStyle}>
-                  <option value="">Select Machine</option>
+                  <option value="">{t('machine')}</option>
                   {machines.map((m) => <option key={m.id} value={m.id}>{m.machine_name} ({m.machine_code})</option>)}
                 </select>
                 <Input type="number" placeholder="Quantity to use" value={useQty} onChange={(e) => setUseQty(e.target.value)} />
                 <Input type="text" placeholder="Note" value={useNote} onChange={(e) => setUseNote(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
-                <Button variant="danger" size="md" onClick={handleSaveUsage}>Save Usage</Button>
-                <Button variant="secondary" size="md" onClick={() => setShowUsePartForm(false)}>Cancel</Button>
+                <Button variant="danger" size="md" onClick={handleSaveUsage}>{t('save_usage')}</Button>
+                <Button variant="secondary" size="md" onClick={() => setShowUsePartForm(false)}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
           {showAddStockForm && addStockPart && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Add Stock</h3>
+              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('add_stock')}</h3>
               <p style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '0.9rem', color: colors.darkText }}>
-                <strong>{addStockPart.part_name}</strong> — Current Stock: {addStockPart.current_stock}
+                <strong>{addStockPart.part_name}</strong> — {t('current_stock')}: {addStockPart.current_stock}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
                 <Input type="number" placeholder="Quantity to add" value={addQty} onChange={(e) => setAddQty(e.target.value)} />
                 <Input type="text" placeholder="Note" value={addNote} onChange={(e) => setAddNote(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
-                <Button variant="success" size="md" onClick={handleSaveAddStock}>Save</Button>
-                <Button variant="secondary" size="md" onClick={() => setShowAddStockForm(false)}>Cancel</Button>
+                <Button variant="success" size="md" onClick={handleSaveAddStock}>{t('save')}</Button>
+                <Button variant="secondary" size="md" onClick={() => setShowAddStockForm(false)}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
-          {/* Parts table/cards */}
+          {/* Parts table */}
           {isDesktop ? (
             <div style={{ backgroundColor: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: spacing.xxxl }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
-                    {['Part Code', 'Part Name', 'Category', 'Stock', 'Min Stock', 'Location', 'Action'].map((h) => (
+                    {[t('part_code'), t('part_name'), t('category'), t('stock'), t('min_stock'), t('location'), t('action')].map((h) => (
                       <th key={h} style={{ textAlign: 'left', padding: spacing.md, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{h}</th>
                     ))}
                   </tr>
@@ -571,9 +570,9 @@ function FactoryDetailPage() {
                       <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{part.location || <span style={{ color: colors.lightText, fontStyle: 'italic' }}>—</span>}</td>
                       <td style={{ padding: spacing.md }}>
                         <div style={{ display: 'flex', gap: spacing.xs }}>
-                          <Button variant="danger" size="sm" onClick={() => openUsePartForm(part)}>Use</Button>
-                          <Button variant="success" size="sm" onClick={() => openAddStockForm(part)}>Add</Button>
-                          <button onClick={() => openEditPartForm(part)} style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: '600', backgroundColor: '#EFF6FF', color: colors.primary, border: `1px solid ${colors.primary}`, borderRadius: '6px', cursor: 'pointer' }}>Edit</button>
+                          <Button variant="danger" size="sm" onClick={() => openUsePartForm(part)}>{t('use')}</Button>
+                          <Button variant="success" size="sm" onClick={() => openAddStockForm(part)}>{t('add')}</Button>
+                          <button onClick={() => openEditPartForm(part)} style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: '600', backgroundColor: '#EFF6FF', color: colors.primary, border: `1px solid ${colors.primary}`, borderRadius: '6px', cursor: 'pointer' }}>{t('edit')}</button>
                         </div>
                       </td>
                     </tr>
@@ -606,129 +605,125 @@ function FactoryDetailPage() {
                     {part.current_stock <= part.min_stock && <span style={{ fontSize: '0.75rem', color: colors.danger, fontWeight: '600' }}>⚠️ Low Stock</span>}
                   </div>
                   <div style={{ display: 'flex', gap: spacing.sm }}>
-                    <button onClick={() => openUsePartForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#FEF2F2', color: colors.danger, border: `1px solid #FECACA`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Use</button>
-                    <button onClick={() => openAddStockForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#F0FDF4', color: '#15803D', border: `1px solid #BBF7D0`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Add Stock</button>
-                    <button onClick={() => openEditPartForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#EFF6FF', color: colors.primary, border: `1px solid #BFDBFE`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Edit</button>
+                    <button onClick={() => openUsePartForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#FEF2F2', color: colors.danger, border: `1px solid #FECACA`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('use')}</button>
+                    <button onClick={() => openAddStockForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#F0FDF4', color: '#15803D', border: `1px solid #BBF7D0`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('add_stock')}</button>
+                    <button onClick={() => openEditPartForm(part)} style={{ flex: 1, height: '44px', backgroundColor: '#EFF6FF', color: colors.primary, border: `1px solid #BFDBFE`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('edit')}</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── CONSUMABLES ── */}
+          {/* CONSUMABLES */}
           <SectionTitle isDesktop={isDesktop} action={
             <Button variant="primary" size="md" onClick={() => { setShowAddConsumableForm(!showAddConsumableForm); closeEditConsumableForm(); }}>
-              {showAddConsumableForm ? 'Cancel' : '+ Add Consumable'}
+              {showAddConsumableForm ? t('cancel') : t('add_consumable')}
             </Button>
           }>
-            🧵 Consumables ({filteredConsumables.length})
+            🧵 {t('consumables')} ({filteredConsumables.length})
           </SectionTitle>
 
           <div style={{ marginBottom: spacing.lg }}>
-            <Input type="text" placeholder="Search consumables..." value={consumableSearch}
+            <Input type="text" placeholder={t('search_consumables')} value={consumableSearch}
               onChange={(e) => setConsumableSearch(e.target.value)} style={{ maxWidth: isDesktop ? '350px' : '100%' }} />
           </div>
 
-          {/* Add Consumable Form */}
           {showAddConsumableForm && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.lg} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Add New Consumable</h3>
+              <h3 style={{ margin: `0 0 ${spacing.lg} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('add_new_consumable')}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
-                <Input type="text" placeholder="Name (e.g. White Thread)" value={cName} onChange={(e) => setCName(e.target.value)} />
-                <Input type="text" placeholder="Category (e.g. Thread)" value={cCategory} onChange={(e) => setCCategory(e.target.value)} />
+                <Input type="text" placeholder={t('name')} value={cName} onChange={(e) => setCName(e.target.value)} />
+                <Input type="text" placeholder={t('category')} value={cCategory} onChange={(e) => setCCategory(e.target.value)} />
                 <select value={cMachineId} onChange={(e) => setCMachineId(e.target.value)} style={selectStyle}>
-                  <option value="">Select Machine</option>
+                  <option value="">{t('machine')}</option>
                   {machines.map((m) => <option key={m.id} value={m.id}>{m.machine_name} ({m.machine_code})</option>)}
                 </select>
-                <Input type="number" placeholder="Current Stock" value={cStock} onChange={(e) => setCStock(e.target.value)} />
-                <Input type="number" placeholder="Minimum Stock" value={cMinStock} onChange={(e) => setCMinStock(e.target.value)} />
+                <Input type="number" placeholder={t('current_stock')} value={cStock} onChange={(e) => setCStock(e.target.value)} />
+                <Input type="number" placeholder={t('min_stock')} value={cMinStock} onChange={(e) => setCMinStock(e.target.value)} />
                 <select value={cUnit} onChange={(e) => setCUnit(e.target.value)} style={selectStyle}>
                   {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
-                <Input type="text" placeholder="Location" value={cLocation} onChange={(e) => setCLocation(e.target.value)} />
+                <Input type="text" placeholder={t('location')} value={cLocation} onChange={(e) => setCLocation(e.target.value)} />
               </div>
-              <Button variant="success" size="md" onClick={handleSaveConsumable} style={{ marginTop: spacing.lg }}>Save Consumable</Button>
+              <Button variant="success" size="md" onClick={handleSaveConsumable} style={{ marginTop: spacing.lg }}>{t('save_consumable')}</Button>
             </div>
           )}
 
-          {/* Edit Consumable Form */}
           {editingConsumable && (
             <div style={{ ...formCard, border: `2px solid #f59e0b`, backgroundColor: '#fffbeb' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
                 <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>
-                  ✏️ Editing — <span style={{ color: '#b45309' }}>{editingConsumable.name}</span>
+                  ✏️ {t('edit')} — <span style={{ color: '#b45309' }}>{editingConsumable.name}</span>
                 </h3>
                 <button onClick={closeEditConsumableForm} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: colors.lightText }}>✕</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
-                <Input type="text" placeholder="Name" value={ecName} onChange={(e) => setEcName(e.target.value)} />
-                <Input type="text" placeholder="Category" value={ecCategory} onChange={(e) => setEcCategory(e.target.value)} />
+                <Input type="text" placeholder={t('name')} value={ecName} onChange={(e) => setEcName(e.target.value)} />
+                <Input type="text" placeholder={t('category')} value={ecCategory} onChange={(e) => setEcCategory(e.target.value)} />
                 <select value={ecMachineId} onChange={(e) => setEcMachineId(e.target.value)} style={selectStyle}>
-                  <option value="">Select Machine</option>
+                  <option value="">{t('machine')}</option>
                   {machines.map((m) => <option key={m.id} value={m.id}>{m.machine_name} ({m.machine_code})</option>)}
                 </select>
-                <Input type="number" placeholder="Current Stock" value={ecStock} onChange={(e) => setEcStock(e.target.value)} />
-                <Input type="number" placeholder="Minimum Stock" value={ecMinStock} onChange={(e) => setEcMinStock(e.target.value)} />
+                <Input type="number" placeholder={t('current_stock')} value={ecStock} onChange={(e) => setEcStock(e.target.value)} />
+                <Input type="number" placeholder={t('min_stock')} value={ecMinStock} onChange={(e) => setEcMinStock(e.target.value)} />
                 <select value={ecUnit} onChange={(e) => setEcUnit(e.target.value)} style={selectStyle}>
                   {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
-                <Input type="text" placeholder="Location" value={ecLocation} onChange={(e) => setEcLocation(e.target.value)} />
+                <Input type="text" placeholder={t('location')} value={ecLocation} onChange={(e) => setEcLocation(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
                 <Button variant="primary" size="md" onClick={handleSaveEditConsumable} disabled={isSavingConsumable}>
-                  {isSavingConsumable ? 'Saving...' : 'Save Changes'}
+                  {isSavingConsumable ? t('saving') : t('save_changes')}
                 </Button>
-                <Button variant="secondary" size="md" onClick={closeEditConsumableForm}>Cancel</Button>
+                <Button variant="secondary" size="md" onClick={closeEditConsumableForm}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
-          {/* Use Consumable Form */}
           {showUseConsumableForm && selectedConsumable && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Use Consumable</h3>
+              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('use_consumable')}</h3>
               <p style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '0.9rem', color: colors.darkText }}>
-                <strong>{selectedConsumable.name}</strong> — Stock: {selectedConsumable.current_stock} {selectedConsumable.unit}
+                <strong>{selectedConsumable.name}</strong> — {t('stock')}: {selectedConsumable.current_stock} {selectedConsumable.unit}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
                 <Input type="number" placeholder={`Quantity (${selectedConsumable.unit})`} value={useConsumableQty} onChange={(e) => setUseConsumableQty(e.target.value)} />
                 <Input type="text" placeholder="Note" value={useConsumableNote} onChange={(e) => setUseConsumableNote(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
-                <Button variant="danger" size="md" onClick={handleSaveUseConsumable}>Record Usage</Button>
-                <Button variant="secondary" size="md" onClick={() => setShowUseConsumableForm(false)}>Cancel</Button>
+                <Button variant="danger" size="md" onClick={handleSaveUseConsumable}>{t('record_usage')}</Button>
+                <Button variant="secondary" size="md" onClick={() => setShowUseConsumableForm(false)}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
-          {/* Add Consumable Stock Form */}
           {showAddConsumableStockForm && addConsumableStockItem && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Add Stock</h3>
+              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('add_stock')}</h3>
               <p style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '0.9rem', color: colors.darkText }}>
-                <strong>{addConsumableStockItem.name}</strong> — Current: {addConsumableStockItem.current_stock} {addConsumableStockItem.unit}
+                <strong>{addConsumableStockItem.name}</strong> — {t('current_stock')}: {addConsumableStockItem.current_stock} {addConsumableStockItem.unit}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
                 <Input type="number" placeholder={`Quantity (${addConsumableStockItem.unit})`} value={addConsumableQty} onChange={(e) => setAddConsumableQty(e.target.value)} />
                 <Input type="text" placeholder="Note" value={addConsumableNote} onChange={(e) => setAddConsumableNote(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
-                <Button variant="success" size="md" onClick={handleSaveAddConsumableStock}>Save</Button>
-                <Button variant="secondary" size="md" onClick={() => setShowAddConsumableStockForm(false)}>Cancel</Button>
+                <Button variant="success" size="md" onClick={handleSaveAddConsumableStock}>{t('save')}</Button>
+                <Button variant="secondary" size="md" onClick={() => setShowAddConsumableStockForm(false)}>{t('cancel')}</Button>
               </div>
             </div>
           )}
 
-          {/* Consumables table/cards */}
+          {/* Consumables table */}
           {isDesktop ? (
             <div style={{ backgroundColor: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: spacing.xxxl }}>
               {filteredConsumables.length === 0 ? (
-                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>No consumables added yet.</p>
+                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>{t('no_consumables')}</p>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
-                      {['Name', 'Category', 'Machine', 'Stock', 'Min', 'Unit', 'Location', 'Action'].map((h) => (
+                      {[t('name'), t('category'), t('machine'), t('stock'), t('min'), t('unit'), t('location'), t('action')].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: spacing.md, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{h}</th>
                       ))}
                     </tr>
@@ -750,9 +745,9 @@ function FactoryDetailPage() {
                         <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{c.location || <span style={{ color: colors.lightText, fontStyle: 'italic' }}>—</span>}</td>
                         <td style={{ padding: spacing.md }}>
                           <div style={{ display: 'flex', gap: spacing.xs }}>
-                            <Button variant="danger" size="sm" onClick={() => openUseConsumableForm(c)}>Use</Button>
-                            <Button variant="success" size="sm" onClick={() => openAddConsumableStockForm(c)}>Add</Button>
-                            <button onClick={() => openEditConsumableForm(c)} style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: '600', backgroundColor: '#fffbeb', color: '#b45309', border: `1px solid #f59e0b`, borderRadius: '6px', cursor: 'pointer' }}>Edit</button>
+                            <Button variant="danger" size="sm" onClick={() => openUseConsumableForm(c)}>{t('use')}</Button>
+                            <Button variant="success" size="sm" onClick={() => openAddConsumableStockForm(c)}>{t('add')}</Button>
+                            <button onClick={() => openEditConsumableForm(c)} style={{ padding: '4px 10px', fontSize: '0.78rem', fontWeight: '600', backgroundColor: '#fffbeb', color: '#b45309', border: `1px solid #f59e0b`, borderRadius: '6px', cursor: 'pointer' }}>{t('edit')}</button>
                           </div>
                         </td>
                       </tr>
@@ -764,7 +759,7 @@ function FactoryDetailPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md, marginBottom: spacing.xxxl }}>
               {filteredConsumables.length === 0 ? (
-                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>No consumables added yet.</p>
+                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>{t('no_consumables')}</p>
               ) : filteredConsumables.map((c) => (
                 <div key={c.id} style={{
                   backgroundColor: c.current_stock <= c.min_stock ? '#FEF2F2' : colors.white,
@@ -788,41 +783,41 @@ function FactoryDetailPage() {
                     {c.current_stock <= c.min_stock && <span style={{ fontSize: '0.75rem', color: colors.danger, fontWeight: '600' }}>⚠️ Low Stock</span>}
                   </div>
                   <div style={{ display: 'flex', gap: spacing.sm }}>
-                    <button onClick={() => openUseConsumableForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#FEF2F2', color: colors.danger, border: `1px solid #FECACA`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Use</button>
-                    <button onClick={() => openAddConsumableStockForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#F0FDF4', color: '#15803D', border: `1px solid #BBF7D0`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Add Stock</button>
-                    <button onClick={() => openEditConsumableForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#fffbeb', color: '#b45309', border: `1px solid #f59e0b`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>Edit</button>
+                    <button onClick={() => openUseConsumableForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#FEF2F2', color: colors.danger, border: `1px solid #FECACA`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('use')}</button>
+                    <button onClick={() => openAddConsumableStockForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#F0FDF4', color: '#15803D', border: `1px solid #BBF7D0`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('add_stock')}</button>
+                    <button onClick={() => openEditConsumableForm(c)} style={{ flex: 1, height: '44px', backgroundColor: '#fffbeb', color: '#b45309', border: `1px solid #f59e0b`, borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>{t('edit')}</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── STOCK TRANSACTIONS ── */}
-          <SectionTitle isDesktop={isDesktop}>Recent Stock Transactions</SectionTitle>
+          {/* STOCK TRANSACTIONS */}
+          <SectionTitle isDesktop={isDesktop}>{t('recent_stock_transactions')}</SectionTitle>
           {isDesktop ? (
             <div style={{ backgroundColor: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: spacing.xxxl }}>
               {transactions.length === 0 ? (
-                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>No transactions found.</p>
+                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>{t('no_transactions')}</p>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
-                      {['Part Name', 'Machine', 'Type', 'Qty', 'Note', 'By'].map((h) => (
+                      {[t('part_name'), t('machine'), 'Type', 'Qty', 'Note', t('by')].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: spacing.md, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((t) => (
-                      <tr key={t.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{getPartName(t.part_id)}</td>
-                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{getMachineCode(t.machine_id)}</td>
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{getPartName(tx.part_id)}</td>
+                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{getMachineCode(tx.machine_id)}</td>
                         <td style={{ padding: spacing.md }}>
-                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600', backgroundColor: t.transaction_type === 'IN' ? '#D1FAE5' : '#FEE2E2', color: t.transaction_type === 'IN' ? '#065F46' : '#991B1B' }}>{t.transaction_type}</span>
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600', backgroundColor: tx.transaction_type === 'IN' ? '#D1FAE5' : '#FEE2E2', color: tx.transaction_type === 'IN' ? '#065F46' : '#991B1B' }}>{tx.transaction_type}</span>
                         </td>
-                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{t.qty}</td>
-                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{t.note}</td>
-                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{t.created_by}</td>
+                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{tx.qty}</td>
+                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{tx.note}</td>
+                        <td style={{ padding: spacing.md, fontSize: '0.85rem', color: colors.darkText }}>{tx.created_by}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -832,52 +827,52 @@ function FactoryDetailPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, marginBottom: spacing.xxxl }}>
               {transactions.length === 0 ? (
-                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>No transactions found.</p>
-              ) : transactions.map((t) => (
-                <div key={t.id} style={{ backgroundColor: colors.white, borderRadius: '10px', padding: spacing.md, border: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>{t('no_transactions')}</p>
+              ) : transactions.map((tx) => (
+                <div key={tx.id} style={{ backgroundColor: colors.white, borderRadius: '10px', padding: spacing.md, border: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{getPartName(t.part_id)}</p>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: colors.lightText }}>{getMachineCode(t.machine_id)} · {t.note}</p>
+                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{getPartName(tx.part_id)}</p>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: colors.lightText }}>{getMachineCode(tx.machine_id)} · {tx.note}</p>
                   </div>
-                  <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600', backgroundColor: t.transaction_type === 'IN' ? '#D1FAE5' : '#FEE2E2', color: t.transaction_type === 'IN' ? '#065F46' : '#991B1B' }}>{t.transaction_type} {t.qty}</span>
+                  <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600', backgroundColor: tx.transaction_type === 'IN' ? '#D1FAE5' : '#FEE2E2', color: tx.transaction_type === 'IN' ? '#065F46' : '#991B1B' }}>{tx.transaction_type} {tx.qty}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── MAINTENANCE HISTORY ── */}
+          {/* MAINTENANCE HISTORY */}
           <SectionTitle isDesktop={isDesktop} action={
             <Button variant="primary" size="md" onClick={() => setShowMaintenanceForm(!showMaintenanceForm)}>
-              {showMaintenanceForm ? 'Cancel' : '+ Add Log'}
+              {showMaintenanceForm ? t('cancel') : t('add_log')}
             </Button>
           }>
-            Maintenance History
+            {t('maintenance_history')}
           </SectionTitle>
           {showMaintenanceForm && (
             <div style={formCard}>
-              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>Add Maintenance Log</h3>
+              <h3 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '700', color: colors.darkText }}>{t('add_maintenance_log')}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: spacing.md }}>
                 <select value={maintenanceMachineId} onChange={(e) => setMaintenanceMachineId(e.target.value)} style={selectStyle}>
-                  <option value="">Select Machine</option>
+                  <option value="">{t('machine')}</option>
                   {machines.map((m) => <option key={m.id} value={m.id}>{m.machine_name} ({m.machine_code})</option>)}
                 </select>
-                <Input type="text" placeholder="Issue Title" value={issueTitle} onChange={(e) => setIssueTitle(e.target.value)} />
-                <Input type="text" placeholder="Symptom" value={symptom} onChange={(e) => setSymptom(e.target.value)} />
-                <Input type="text" placeholder="Action Taken" value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} />
-                <Input type="text" placeholder="Result" value={result} onChange={(e) => setResult(e.target.value)} />
+                <Input type="text" placeholder={t('issue')} value={issueTitle} onChange={(e) => setIssueTitle(e.target.value)} />
+                <Input type="text" placeholder={t('symptom')} value={symptom} onChange={(e) => setSymptom(e.target.value)} />
+                <Input type="text" placeholder={t('action_taken')} value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} />
+                <Input type="text" placeholder={t('result')} value={result} onChange={(e) => setResult(e.target.value)} />
               </div>
-              <Button variant="primary" size="md" onClick={handleSaveMaintenance} style={{ marginTop: spacing.lg }}>Save Maintenance Log</Button>
+              <Button variant="primary" size="md" onClick={handleSaveMaintenance} style={{ marginTop: spacing.lg }}>{t('save_maintenance_log')}</Button>
             </div>
           )}
           {isDesktop ? (
             <div style={{ backgroundColor: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: spacing.xxxl }}>
               {maintenanceLogs.length === 0 ? (
-                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>No maintenance logs found.</p>
+                <p style={{ padding: spacing.lg, color: colors.lightText, fontSize: '0.9rem' }}>{t('no_maintenance')}</p>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
-                      {['Machine', 'Issue', 'Symptom', 'Action', 'Result', 'By'].map((h) => (
+                      {[t('machine'), t('issue'), t('symptom'), t('action_taken'), t('result'), t('by')].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: spacing.md, fontSize: '0.85rem', fontWeight: '600', color: colors.darkText }}>{h}</th>
                       ))}
                     </tr>
@@ -900,7 +895,7 @@ function FactoryDetailPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, marginBottom: spacing.xxxl }}>
               {maintenanceLogs.length === 0 ? (
-                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>No maintenance logs found.</p>
+                <p style={{ color: colors.lightText, fontSize: '0.9rem' }}>{t('no_maintenance')}</p>
               ) : maintenanceLogs.map((log) => (
                 <div key={log.id} style={{ backgroundColor: colors.white, borderRadius: '10px', padding: spacing.lg, border: `1px solid ${colors.border}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: spacing.sm }}>
@@ -908,9 +903,9 @@ function FactoryDetailPage() {
                     <span style={{ fontSize: '0.75rem', color: colors.lightText }}>{log.created_by}</span>
                   </div>
                   <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: colors.darkText, fontWeight: '600' }}>{log.issue_title}</p>
-                  {log.symptom && <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: colors.mediumText }}>Symptom: {log.symptom}</p>}
-                  {log.action_taken && <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: colors.mediumText }}>Action: {log.action_taken}</p>}
-                  {log.result && <p style={{ margin: 0, fontSize: '0.8rem', color: colors.mediumText }}>Result: {log.result}</p>}
+                  {log.symptom && <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: colors.mediumText }}>{t('symptom')}: {log.symptom}</p>}
+                  {log.action_taken && <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: colors.mediumText }}>{t('action_taken')}: {log.action_taken}</p>}
+                  {log.result && <p style={{ margin: 0, fontSize: '0.8rem', color: colors.mediumText }}>{t('result')}: {log.result}</p>}
                 </div>
               ))}
             </div>
@@ -922,7 +917,7 @@ function FactoryDetailPage() {
               <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px, 100%)', backgroundColor: colors.white, borderRadius: borderRadius.lg, boxShadow: shadows.lg, padding: spacing.xl }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
                   <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: colors.darkText }}>{previewPart.part_name}</h3>
-                  <Button variant="secondary" size="sm" onClick={() => setPreviewPart(null)}>Close</Button>
+                  <Button variant="secondary" size="sm" onClick={() => setPreviewPart(null)}>{t('close')}</Button>
                 </div>
                 {previewPartData.imageUrl ? (
                   <img src={previewPartData.imageUrl} alt={previewPart.part_name} style={{ width: '100%', maxHeight: '260px', objectFit: 'cover', borderRadius: borderRadius.md, marginBottom: spacing.md }} />
