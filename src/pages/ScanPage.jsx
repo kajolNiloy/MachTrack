@@ -52,8 +52,6 @@ function ScanPage() {
   const navigate = useNavigate();
 
   // Attach stream to video AFTER React renders the <video> element.
-  // Calling load() reinitializes the element after srcObject is set —
-  // without it the video stays dark because readyState never advances.
   useEffect(() => {
     if (!isCameraScanning || !videoRef.current || !mediaStreamRef.current) return;
 
@@ -118,9 +116,7 @@ function ScanPage() {
         .eq("machine_id", data.id)
         .order("created_at", { ascending: false });
 
-      if (!logsError) {
-        setMaintenanceLogs(logs || []);
-      }
+      if (!logsError) setMaintenanceLogs(logs || []);
 
       const { data: trans, error: transError } = await supabase
         .from("stock_transactions")
@@ -129,9 +125,7 @@ function ScanPage() {
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (!transError) {
-        setStockTransactions(trans || []);
-      }
+      if (!transError) setStockTransactions(trans || []);
     }
 
     if (trimmed.startsWith("P-")) {
@@ -158,9 +152,7 @@ function ScanPage() {
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (!transError) {
-        setStockTransactions(trans || []);
-      }
+      if (!transError) setStockTransactions(trans || []);
     }
   }
 
@@ -260,20 +252,16 @@ function ScanPage() {
       const track = stream.getVideoTracks()[0];
       const trackSettings = track?.getSettings?.() || {};
       const activeDeviceId = trackSettings.deviceId;
-      if (activeDeviceId) {
-        setSelectedCameraId(activeDeviceId);
-      }
+      if (activeDeviceId) setSelectedCameraId(activeDeviceId);
 
-      setIsCameraScanning(true); // triggers re-render → <video> appears → useEffect fires
+      setIsCameraScanning(true);
 
       scanIntervalRef.current = setInterval(async () => {
         try {
           if (!videoRef.current || !canvasRef.current) return;
 
           const video = videoRef.current;
-          if (video.paused) {
-            video.play().catch(() => {});
-          }
+          if (video.paused) video.play().catch(() => {});
 
           const ready = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
           if (!ready) return;
@@ -282,7 +270,7 @@ function ScanPage() {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
 
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (!ctx) return;
 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -330,9 +318,7 @@ function ScanPage() {
     }
 
     return () => {
-      if (scanTimerRef.current) {
-        clearTimeout(scanTimerRef.current);
-      }
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
       if (hasDeviceEvents) {
         navigator.mediaDevices.removeEventListener("devicechange", loadCameraDevices);
       }
@@ -342,135 +328,388 @@ function ScanPage() {
 
   return (
     <AppLayout>
-      <h2 style={{ ...typography.sectionTitle, margin: `0 0 ${spacing.sm} 0`, color: colors.darkText }}>Scan QR Code</h2>
-      <p style={{ margin: `0 0 ${spacing.xl} 0`, ...typography.body, color: colors.lightText }}>Scan machine or part QR code using the scanner.</p>
+      {/* Page Title */}
+      <div style={{ marginBottom: spacing.lg }}>
+        <h2 style={{ ...typography.sectionTitle, margin: 0, color: colors.darkText, fontSize: '1.5rem' }}>
+          Scan QR Code
+        </h2>
+        <p style={{ margin: `${spacing.xs} 0 0 0`, ...typography.body, color: colors.lightText }}>
+          Point the camera at a machine or part QR code.
+        </p>
+      </div>
 
-      <div style={{ display: "flex", gap: spacing.sm, marginBottom: spacing.lg, flexWrap: "wrap" }}>
+      {/* SCAN / Stop Button — large touch target */}
+      <div style={{ marginBottom: spacing.lg }}>
         {!isCameraScanning ? (
-          <Button variant="primary" onClick={startCameraScan}>SCAN</Button>
+          <button
+            onClick={startCameraScan}
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              height: '64px',
+              fontSize: '1.2rem',
+              fontWeight: '700',
+              letterSpacing: '0.05em',
+              backgroundColor: colors.primary,
+              color: colors.white,
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          >
+            📷 SCAN
+          </button>
         ) : (
-          <Button variant="danger" onClick={stopCameraScan}>Stop Camera</Button>
+          <button
+            onClick={stopCameraScan}
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              height: '64px',
+              fontSize: '1.2rem',
+              fontWeight: '700',
+              backgroundColor: colors.danger,
+              color: colors.white,
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          >
+            ✕ Stop Camera
+          </button>
         )}
       </div>
 
+      {/* Camera Preview — full width on tablet */}
       {isCameraScanning && (
-        <Card style={{ marginBottom: spacing.lg, maxWidth: "520px" }}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            onLoadedMetadata={(e) => {
-              e.target.play().catch(() => {});
-            }}
-            style={{ width: "100%", borderRadius: "8px", backgroundColor: "#000" }}
-          />
+        <div style={{ marginBottom: spacing.lg, maxWidth: '680px' }}>
+          <div style={{
+            backgroundColor: '#000',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            position: 'relative',
+          }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onLoadedMetadata={(e) => {
+                e.target.play().catch(() => {});
+              }}
+              style={{ width: '100%', display: 'block', borderRadius: '16px' }}
+            />
+            {/* Scan overlay guide */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '200px',
+              height: '200px',
+              border: '3px solid rgba(255,255,255,0.7)',
+              borderRadius: '12px',
+              pointerEvents: 'none',
+            }} />
+          </div>
           <canvas ref={canvasRef} style={{ display: "none" }} />
-          <p style={{ margin: `${spacing.md} 0 0 0`, ...typography.small, color: colors.lightText }}>
-            Point your camera at the QR code. Scan will stop automatically after detection.
+          <p style={{ margin: `${spacing.sm} 0 0 0`, ...typography.small, color: colors.lightText, textAlign: 'center' }}>
+            Align QR code within the box — scan stops automatically
           </p>
-        </Card>
+        </div>
       )}
 
       {!isCameraScanning && <canvas ref={canvasRef} style={{ display: "none" }} />}
 
+      {/* Error message */}
       {cameraError && (
-        <p style={{ color: colors.danger, marginBottom: spacing.md, ...typography.body }}>
+        <div style={{
+          backgroundColor: '#FEF2F2',
+          border: `1px solid ${colors.danger}`,
+          borderRadius: '8px',
+          padding: spacing.md,
+          marginBottom: spacing.md,
+          color: colors.danger,
+          ...typography.body,
+        }}>
           {cameraError}
-        </p>
+        </div>
       )}
 
-      <Input
-        type="text"
-        autoFocus
-        value={scanCode}
-        onChange={handleInputChange}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            runScanNow();
-          }
-        }}
-        placeholder="Scan code here..."
-        style={{ width: "400px" }}
-      />
+      {/* Manual input */}
+      <div style={{ maxWidth: '480px', marginBottom: spacing.xl }}>
+        <Input
+          type="text"
+          autoFocus
+          value={scanCode}
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") runScanNow();
+          }}
+          placeholder="Or type scan code here..."
+          style={{ width: '100%', height: '52px', fontSize: '1rem' }}
+        />
+      </div>
 
-      <div style={{ marginTop: spacing.xl }}>
+      {/* Results */}
+      <div>
         {scanType === "machine" && scanResult && (
-          <Card>
-            <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Machine Found</h3>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Code:</strong> {scanResult.machine_code}</p>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Name:</strong> {scanResult.machine_name}</p>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Status:</strong> {scanResult.status}</p>
+          <div style={{
+            backgroundColor: colors.white,
+            borderRadius: '16px',
+            padding: spacing.xl,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            maxWidth: '680px',
+          }}>
+            {/* Result header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.md,
+              marginBottom: spacing.lg,
+              paddingBottom: spacing.lg,
+              borderBottom: `1px solid ${colors.border}`,
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#EFF6FF',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem',
+              }}>🏭</div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: colors.lightText }}>Machine Found</p>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: colors.darkText }}>
+                  {scanResult.machine_name}
+                </h3>
+              </div>
+              <div style={{
+                marginLeft: 'auto',
+                backgroundColor: scanResult.status === 'active' ? '#D1FAE5' : '#FEE2E2',
+                color: scanResult.status === 'active' ? '#065F46' : '#991B1B',
+                padding: `${spacing.xs} ${spacing.md}`,
+                borderRadius: '999px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+              }}>
+                {scanResult.status}
+              </div>
+            </div>
 
-            <Button
-              variant="primary"
+            {/* Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md, marginBottom: spacing.lg }}>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Code</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.machine_code}</p>
+              </div>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Status</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.status}</p>
+              </div>
+            </div>
+
+            {/* Open factory button */}
+            <button
               onClick={() => navigate(`/factory/${scanResult.factory_id}`)}
-              style={{ marginTop: spacing.lg }}
+              style={{
+                width: '100%',
+                height: '56px',
+                backgroundColor: colors.primary,
+                color: colors.white,
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                marginBottom: spacing.lg,
+              }}
             >
-              Open Factory Page
-            </Button>
+              Open Factory Page →
+            </button>
 
+            {/* Maintenance Logs */}
             {maintenanceLogs.length > 0 && (
-              <div style={{ marginTop: spacing.xl }}>
-                <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.md} 0`, color: colors.darkText }}>Maintenance Logs</h3>
-                <ul style={{ listStyleType: "none", padding: 0 }}>
-                  {maintenanceLogs.map((log) => (
-                    <li key={log.id} style={{ padding: spacing.md, borderBottom: `1px solid ${colors.borderLight}`, ...typography.body, color: colors.lightText }}>
-                      {(log.issue_title || log.description || "Maintenance log")} - {new Date(log.created_at).toLocaleDateString()}
-                    </li>
-                  ))}
-                </ul>
+              <div style={{ marginTop: spacing.lg }}>
+                <h4 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>
+                  Maintenance Logs
+                </h4>
+                {maintenanceLogs.map((log) => (
+                  <div key={log.id} style={{
+                    padding: spacing.md,
+                    borderBottom: `1px solid ${colors.border}`,
+                    fontSize: '0.9rem',
+                    color: colors.mediumText,
+                  }}>
+                    {log.issue_title || log.description || "Maintenance log"} —{" "}
+                    <span style={{ color: colors.lightText }}>{new Date(log.created_at).toLocaleDateString()}</span>
+                  </div>
+                ))}
               </div>
             )}
 
+            {/* Stock Transactions */}
             {stockTransactions.length > 0 && (
-              <div style={{ marginTop: spacing.xl }}>
-                <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.md} 0`, color: colors.darkText }}>Recent Stock Transactions</h3>
-                <ul style={{ listStyleType: "none", padding: 0 }}>
-                  {stockTransactions.map((trans) => (
-                    <li key={trans.id} style={{ padding: spacing.md, borderBottom: `1px solid ${colors.borderLight}`, ...typography.body, color: colors.lightText }}>
-                      {(trans.transaction_type || trans.type)} {(trans.qty ?? trans.quantity)} - {new Date(trans.created_at).toLocaleDateString()}
-                    </li>
-                  ))}
-                </ul>
+              <div style={{ marginTop: spacing.lg }}>
+                <h4 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>
+                  Recent Stock Transactions
+                </h4>
+                {stockTransactions.map((trans) => (
+                  <div key={trans.id} style={{
+                    padding: spacing.md,
+                    borderBottom: `1px solid ${colors.border}`,
+                    fontSize: '0.9rem',
+                    color: colors.mediumText,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}>
+                    <span>{trans.transaction_type || trans.type} — {trans.qty ?? trans.quantity}</span>
+                    <span style={{ color: colors.lightText }}>{new Date(trans.created_at).toLocaleDateString()}</span>
+                  </div>
+                ))}
               </div>
             )}
-          </Card>
+          </div>
         )}
 
         {scanType === "part" && scanResult && (
-          <Card>
-            <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Part Found</h3>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Code:</strong> {scanResult.part_code}</p>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Name:</strong> {scanResult.part_name}</p>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Stock:</strong> {scanResult.current_stock}</p>
-            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Location:</strong> {scanResult.location}</p>
+          <div style={{
+            backgroundColor: colors.white,
+            borderRadius: '16px',
+            padding: spacing.xl,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            maxWidth: '680px',
+          }}>
+            {/* Result header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.md,
+              marginBottom: spacing.lg,
+              paddingBottom: spacing.lg,
+              borderBottom: `1px solid ${colors.border}`,
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#F0FDF4',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem',
+              }}>🔩</div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: colors.lightText }}>Part Found</p>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: colors.darkText }}>
+                  {scanResult.part_name}
+                </h3>
+              </div>
+              <div style={{
+                marginLeft: 'auto',
+                backgroundColor: scanResult.current_stock > scanResult.min_stock ? '#D1FAE5' : '#FEF3C7',
+                color: scanResult.current_stock > scanResult.min_stock ? '#065F46' : '#92400E',
+                padding: `${spacing.xs} ${spacing.md}`,
+                borderRadius: '999px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+              }}>
+                Stock: {scanResult.current_stock}
+              </div>
+            </div>
 
-            <Button
-              variant="primary"
+            {/* Details grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md, marginBottom: spacing.lg }}>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Code</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.part_code}</p>
+              </div>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Location</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.location}</p>
+              </div>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Current Stock</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.current_stock}</p>
+              </div>
+              <div style={{ backgroundColor: colors.background, borderRadius: '8px', padding: spacing.md }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: colors.lightText }}>Category</p>
+                <p style={{ margin: `4px 0 0 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>{scanResult.category || '—'}</p>
+              </div>
+            </div>
+
+            {/* Open factory button */}
+            <button
               onClick={() => navigate(`/factory/${scanResult.factory_id}`)}
-              style={{ marginTop: spacing.lg }}
+              style={{
+                width: '100%',
+                height: '56px',
+                backgroundColor: colors.primary,
+                color: colors.white,
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                marginBottom: spacing.lg,
+              }}
             >
-              Open Factory Page
-            </Button>
+              Open Factory Page →
+            </button>
 
+            {/* Stock Transactions */}
             {stockTransactions.length > 0 && (
-              <div style={{ marginTop: spacing.xl }}>
-                <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.md} 0`, color: colors.darkText }}>Recent Stock Transactions</h3>
-                <ul style={{ listStyleType: "none", padding: 0 }}>
-                  {stockTransactions.map((trans) => (
-                    <li key={trans.id} style={{ padding: spacing.md, borderBottom: `1px solid ${colors.borderLight}`, ...typography.body, color: colors.lightText }}>
-                      {(trans.transaction_type || trans.type)} {(trans.qty ?? trans.quantity)} - {new Date(trans.created_at).toLocaleDateString()}
-                    </li>
-                  ))}
-                </ul>
+              <div style={{ marginTop: spacing.lg }}>
+                <h4 style={{ margin: `0 0 ${spacing.md} 0`, fontSize: '1rem', fontWeight: '600', color: colors.darkText }}>
+                  Recent Stock Transactions
+                </h4>
+                {stockTransactions.map((trans) => (
+                  <div key={trans.id} style={{
+                    padding: spacing.md,
+                    borderBottom: `1px solid ${colors.border}`,
+                    fontSize: '0.9rem',
+                    color: colors.mediumText,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}>
+                    <span>{trans.transaction_type || trans.type} — {trans.qty ?? trans.quantity}</span>
+                    <span style={{ color: colors.lightText }}>{new Date(trans.created_at).toLocaleDateString()}</span>
+                  </div>
+                ))}
               </div>
             )}
-          </Card>
+          </div>
         )}
 
         {scanAttempted && !scanResult && (
-          <p style={{ color: colors.danger, marginTop: spacing.xl, ...typography.body }}>No matching record found.</p>
+          <div style={{
+            backgroundColor: '#FEF2F2',
+            border: `1px solid ${colors.danger}`,
+            borderRadius: '12px',
+            padding: spacing.xl,
+            maxWidth: '480px',
+            textAlign: 'center',
+          }}>
+            <p style={{ margin: 0, fontSize: '1.1rem', color: colors.danger, fontWeight: '600' }}>
+              No matching record found
+            </p>
+            <p style={{ margin: `${spacing.sm} 0 0 0`, fontSize: '0.9rem', color: colors.lightText }}>
+              Check the QR code and try again
+            </p>
+          </div>
         )}
       </div>
     </AppLayout>

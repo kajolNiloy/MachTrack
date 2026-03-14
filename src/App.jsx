@@ -8,34 +8,10 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-  const { user, logout, role, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
   return (
     <>
-      {user && (
-        <div style={{ position: 'fixed', top: 0, left: 0, background: 'yellow', padding: '10px', zIndex: 1000 }}>
-          Email: {user.email}<br/>
-          Role: {role || 'null'}<br/>
-          Loading: {loading ? 'true' : 'false'}
-        </div>
-      )}
-      {user && (
-        <div style={{ padding: '10px', background: '#f0f0f0', textAlign: 'right' }}>
-          <button
-            onClick={logout}
-            style={{
-              padding: '5px 10px',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      )}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance']}><FactoryListPage /></ProtectedRoute>} />
