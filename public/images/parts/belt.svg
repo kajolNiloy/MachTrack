@@ -1,0 +1,11 @@
+<svg width="900" height="520" viewBox="0 0 900 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="520" fill="#F4F6F8"/>
+  <ellipse cx="450" cy="260" rx="300" ry="150" fill="#1F2937"/>
+  <ellipse cx="450" cy="260" rx="230" ry="95" fill="#111827"/>
+  <ellipse cx="450" cy="260" rx="170" ry="65" fill="#F4F6F8"/>
+  <rect x="270" y="184" width="360" height="24" rx="12" fill="#4B5563"/>
+  <rect x="270" y="312" width="360" height="24" rx="12" fill="#4B5563"/>
+  <text x="450" y="468" text-anchor="middle" fill="#374151" font-family="Arial, Helvetica, sans-serif" font-size="30">
+    Belt (Sample Image)
+  </text>
+</svg>

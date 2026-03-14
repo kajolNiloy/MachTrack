@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import AppLayout from "../components/AppLayout";
+import Card from "../components/Card";
+import { colors, spacing, typography } from "../constants/designTokens";
+import { getDisplayFactoryName } from "../lib/factoryNames";
 
 function FactoryListPage() {
   const [factories, setFactories] = useState([]);
@@ -25,45 +29,36 @@ function FactoryListPage() {
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: "#f8fafc",
-        minHeight: "100vh",
-        padding: "24px"
-      }}
-    >
-      <h1 style={{ margin: "0 0 8px 0", fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>MachTrack</h1>
-      <p style={{ margin: "0 0 32px 0", fontSize: "0.875rem", color: "#6b7280" }}>Factory Parts Inventory System</p>
+    <AppLayout>
+      <div style={{ paddingRight: 0, marginRight: 0 }}>
+        <h2 style={{ ...typography.sectionTitle, margin: `0 0 ${spacing.xl} 0`, color: colors.darkText, borderBottom: `1px solid ${colors.border}`, paddingBottom: spacing.md }}>Factories</h2>
 
-      <h2 style={{ margin: "0 0 24px 0", fontSize: "1.5rem", fontWeight: "600", color: "#1f2937", borderBottom: "1px solid #e5e7eb", paddingBottom: "8px" }}>Factories</h2>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "24px"
-        }}
-      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: spacing.lg,
+            width: "100%"
+          }}
+        >
         {factories.map((factory) => (
-          <div
+          <Card
             key={factory.id}
             onClick={() => navigate(`/factory/${factory.id}`)}
             style={{
-              background: "white",
-              padding: "24px",
-              borderRadius: "8px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              border: "1px solid #e5e7eb",
-              cursor: "pointer"
+              cursor: "pointer",
+              transition: '150ms ease-in-out',
+              padding: spacing.lg
             }}
           >
-            <h3 style={{ margin: "0 0 8px 0", fontSize: "1.25rem", fontWeight: "600", color: "#1f2937" }}>{factory.name}</h3>
-            <p style={{ margin: "4px 0", fontSize: "0.875rem", color: "#6b7280" }}>Code: {factory.code}</p>
-            <p style={{ margin: "4px 0", fontSize: "0.875rem", color: "#6b7280" }}>Location: {factory.location}</p>
-          </div>
+            <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.sm} 0`, color: colors.darkText, fontSize: '1.1rem' }}>{getDisplayFactoryName(factory.name)}</h3>
+            <p style={{ margin: `${spacing.xs} 0`, ...typography.small, color: colors.lightText }}>Code: {factory.code}</p>
+            <p style={{ margin: `${spacing.xs} 0`, ...typography.small, color: colors.lightText }}>Location: {factory.location}</p>
+          </Card>
         ))}
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 

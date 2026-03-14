@@ -1,7 +1,29 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import AppLayout from "../components/AppLayout";
+import Card from "../components/Card";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import { colors, spacing, typography, borderRadius, shadows } from "../constants/designTokens";
+import { getDisplayFactoryName } from "../lib/factoryNames";
 
+const KURACHI_FACTORY_NAME = "\u5009\u77e5\u5de5\u5834";
+const KURACHI_MACHINE_PRESETS = [
+  { machine_code: "KRC-001", machine_name: "\u7e2b\u88fd\u6a5f" },
+  { machine_code: "KRC-002", machine_name: "\u30ab\u30e1\u30e9NC\u30ab\u30c3\u30c8\u6a5f" },
+  { machine_code: "KRC-003", machine_name: "\u30ec\u30fc\u30b6\u30ab\u30c3\u30c8\u6a5f" },
+  { machine_code: "KRC-004", machine_name: "NC\u30ab\u30c3\u30c8\u6a5f" },
+  { machine_code: "KRC-005", machine_name: "3D \u30d7\u30ea\u30f3\u30bf" }
+];
+
+const PART_PREVIEW_LIBRARY = {
+  belt: {
+    imageUrl: "/images/parts/belt.svg",
+    description: "Drive belt used to transfer rotational power between machine pulleys.",
+    measurement: "Example size: Length 900 mm, Width 15 mm, Thickness 10 mm"
+  }
+};
 function FactoryDetailPage() {
   const { id } = useParams();
 
@@ -38,6 +60,8 @@ function FactoryDetailPage() {
   const [minStock, setMinStock] = useState("");
   const [location, setLocation] = useState("");
   const [qrCode, setQrCode] = useState("");
+  const [isAddingKurachiMachines, setIsAddingKurachiMachines] = useState(false);
+  const [previewPart, setPreviewPart] = useState(null);
 
   useEffect(() => {
     fetchFactory();
@@ -337,6 +361,38 @@ function FactoryDetailPage() {
     fetchMaintenanceLogs();
   }
 
+  async function handleAddKurachiMachines() {
+    if (!factory) return;
+
+    const existingCodes = new Set(machines.map((machine) => machine.machine_code));
+    const machinesToInsert = KURACHI_MACHINE_PRESETS
+      .filter((machine) => !existingCodes.has(machine.machine_code))
+      .map((machine) => ({
+        factory_id: Number(id),
+        machine_code: machine.machine_code,
+        machine_name: machine.machine_name,
+        status: "active"
+      }));
+
+    if (machinesToInsert.length === 0) {
+      alert("Kurachi factory machines are already added.");
+      return;
+    }
+
+    setIsAddingKurachiMachines(true);
+    const { error } = await supabase.from("machines").insert(machinesToInsert);
+    setIsAddingKurachiMachines(false);
+
+    if (error) {
+      console.error(error);
+      alert("Failed to add machines");
+      return;
+    }
+
+    alert(`${machinesToInsert.length} machine(s) added to 倉知工場`);
+    fetchMachines();
+  }
+
   function getPartName(partId) {
     const part = parts.find((p) => p.id === partId);
     return part ? part.part_name : `Part ID: ${partId}`;
@@ -348,6 +404,24 @@ function FactoryDetailPage() {
     return machine ? machine.machine_code : `Machine ID: ${machineId}`;
   }
 
+  function getPartPreview(part) {
+    const normalizedPartName = (part?.part_name || "").toLowerCase();
+    const isBelt = normalizedPartName.includes("belt") || normalizedPartName.includes("ベルト");
+    const preset = isBelt ? PART_PREVIEW_LIBRARY.belt : null;
+
+    return {
+      imageUrl: part?.image_url || preset?.imageUrl || "",
+      description:
+        part?.description ||
+        preset?.description ||
+        "No description saved for this part.",
+      measurement:
+        part?.measurement ||
+        preset?.measurement ||
+        "No measurement saved for this part."
+    };
+  }
+
   const filteredParts = parts.filter((part) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -355,52 +429,56 @@ function FactoryDetailPage() {
       part.part_code?.toLowerCase().includes(term)
     );
   });
+  const previewPartData = previewPart ? getPartPreview(previewPart) : null;
+  const displayFactoryName = factory ? getDisplayFactoryName(factory.name) : "";
+  const isKurachiFactory = displayFactoryName === KURACHI_FACTORY_NAME;
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        fontFamily: "Arial",
-        backgroundColor: "#f5f7fa",
-        minHeight: "100vh"
-      }}
-    >
-      <Link to="/" style={{ textDecoration: "none", color: "#2563eb" }}>
-        ← Back to Factories
-      </Link>
-
+    <AppLayout>
       {!factory ? (
-        <p style={{ marginTop: "20px" }}>Loading factory...</p>
+        <p style={{ ...typography.body, color: colors.lightText }}>Loading factory...</p>
       ) : (
         <>
-          <h1 style={{ marginTop: "20px" }}>{factory.name}</h1>
-          <p>Code: {factory.code}</p>
-          <p>Location: {factory.location}</p>
+          <h1 style={{ ...typography.pageTitle, margin: `0 0 ${spacing.md} 0`, color: colors.darkText }}>{displayFactoryName}</h1>
+          <p style={{ ...typography.body, color: colors.mediumText, margin: `${spacing.xs} 0 ${spacing.xl} 0` }}>Code: {factory.code} • Location: {factory.location}</p>
 
-          <h2 style={{ marginTop: "30px" }}>Machines</h2>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: spacing.xl,
+              marginBottom: spacing.lg
+            }}
+          >
+            <h2 style={{ ...typography.sectionTitle, margin: 0, color: colors.darkText, borderBottom: `1px solid ${colors.border}`, paddingBottom: spacing.md, flex: 1 }}>Machines</h2>
+            {isKurachiFactory && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleAddKurachiMachines}
+                disabled={isAddingKurachiMachines}
+                style={{ marginLeft: spacing.lg }}
+              >
+                {isAddingKurachiMachines ? "Adding..." : "Add Kurachi Machines"}
+              </Button>
+            )}
+          </div>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "20px",
-              marginTop: "20px"
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: spacing.lg,
+              marginBottom: spacing.xxxl
             }}
           >
             {machines.map((machine) => (
-              <div
-                key={machine.id}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "10px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                }}
-              >
-                <h3 style={{ marginTop: 0 }}>{machine.machine_code}</h3>
-                <p>{machine.machine_name}</p>
-                <p>Status: {machine.status}</p>
-              </div>
+              <Card key={machine.id}>
+                <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.sm} 0`, color: colors.darkText }}>{machine.machine_code}</h3>
+                <p style={{ ...typography.body, color: colors.lightText, margin: spacing.xs }}>{machine.machine_name}</p>
+                <p style={{ ...typography.small, color: colors.mediumText, margin: spacing.xs }}>Status: <strong>{machine.status}</strong></p>
+              </Card>
             ))}
           </div>
 
@@ -409,98 +487,52 @@ function FactoryDetailPage() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginTop: "40px"
+              marginBottom: spacing.lg
             }}
           >
-            <h2>Parts Inventory</h2>
-
-            <button
-              onClick={() => setShowAddPartForm(!showAddPartForm)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#2563eb",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer"
-              }}
-            >
-              Add Part
-            </button>
+            <h2 style={{ ...typography.sectionTitle, margin: 0, color: colors.darkText, borderBottom: `1px solid ${colors.border}`, paddingBottom: spacing.md, flex: 1 }}>Parts Inventory</h2>
+            <Button variant="primary" size="md" onClick={() => setShowAddPartForm(!showAddPartForm)}>Add Part</Button>
           </div>
 
-          <input
-            type="text"
-            placeholder="Search part name or code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: "10px",
-              width: "300px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              marginTop: "12px",
-              marginBottom: "10px"
-            }}
-          />
+          <div style={{ marginBottom: spacing.lg }}>
+            <Input
+              type="text"
+              placeholder="Search part name or code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ maxWidth: "350px" }}
+            />
+          </div>
 
           {showAddPartForm && (
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "10px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                marginTop: "20px"
-              }}
-            >
-              <h3>Add New Part</h3>
+            <Card style={{ marginBottom: spacing.lg }}>
+              <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Add New Part</h3>
 
-              <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
-                <input type="text" placeholder="Part Code" value={partCode} onChange={(e) => setPartCode(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="text" placeholder="Part Name" value={partName} onChange={(e) => setPartName(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="number" placeholder="Current Stock" value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="number" placeholder="Minimum Stock" value={minStock} onChange={(e) => setMinStock(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="text" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-                <input type="text" placeholder="QR Code" value={qrCode} onChange={(e) => setQrCode(e.target.value)} style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-
-                <button
-                  onClick={handleSavePart}
-                  style={{
-                    padding: "10px 16px",
-                    backgroundColor: "#16a34a",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Save Part
-                </button>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: spacing.lg }}>
+                <Input type="text" placeholder="Part Code" value={partCode} onChange={(e) => setPartCode(e.target.value)} />
+                <Input type="text" placeholder="Part Name" value={partName} onChange={(e) => setPartName(e.target.value)} />
+                <Input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
+                <Input type="number" placeholder="Current Stock" value={currentStock} onChange={(e) => setCurrentStock(e.target.value)} />
+                <Input type="number" placeholder="Minimum Stock" value={minStock} onChange={(e) => setMinStock(e.target.value)} />
+                <Input type="text" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
+                <Input type="text" placeholder="QR Code" value={qrCode} onChange={(e) => setQrCode(e.target.value)} />
               </div>
-            </div>
+
+              <Button variant="success" size="md" onClick={handleSavePart} style={{ marginTop: spacing.lg }}>Save Part</Button>
+            </Card>
           )}
 
           {showUsePartForm && selectedPart && (
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "10px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                marginTop: "20px"
-              }}
-            >
-              <h3>Use Part</h3>
-              <p><strong>Part:</strong> {selectedPart.part_name}</p>
-              <p><strong>Current Stock:</strong> {selectedPart.current_stock}</p>
+            <Card style={{ marginBottom: spacing.lg }}>
+              <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Use Part</h3>
+              <p style={{ ...typography.body, color: colors.darkText, marginBottom: spacing.md }}><strong>Part:</strong> {selectedPart.part_name}</p>
+              <p style={{ ...typography.body, color: colors.darkText, marginBottom: spacing.lg }}><strong>Current Stock:</strong> {selectedPart.current_stock}</p>
 
-              <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: spacing.lg }}>
                 <select
                   value={selectedMachineId}
                   onChange={(e) => setSelectedMachineId(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+                  style={{ padding: spacing.md, borderRadius: borderRadius.md, border: `1px solid ${colors.border}`, fontSize: '0.875rem' }}
                 >
                   <option value="">Select Machine</option>
                   {machines.map((machine) => (
@@ -509,107 +541,40 @@ function FactoryDetailPage() {
                     </option>
                   ))}
                 </select>
-
-                <input
-                  type="number"
-                  placeholder="Quantity to use"
-                  value={useQty}
-                  onChange={(e) => setUseQty(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Note"
-                  value={useNote}
-                  onChange={(e) => setUseNote(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <button
-                  onClick={handleSaveUsage}
-                  style={{
-                    padding: "10px 16px",
-                    backgroundColor: "#dc2626",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Save Usage
-                </button>
+                <Input type="number" placeholder="Quantity to use" value={useQty} onChange={(e) => setUseQty(e.target.value)} />
+                <Input type="text" placeholder="Note" value={useNote} onChange={(e) => setUseNote(e.target.value)} />
               </div>
-            </div>
+
+              <Button variant="danger" size="md" onClick={handleSaveUsage} style={{ marginTop: spacing.lg }}>Save Usage</Button>
+            </Card>
           )}
 
           {showAddStockForm && addStockPart && (
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "10px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                marginTop: "20px"
-              }}
-            >
-              <h3>Add Stock</h3>
-              <p><strong>Part:</strong> {addStockPart.part_name}</p>
-              <p><strong>Current Stock:</strong> {addStockPart.current_stock}</p>
+            <Card style={{ marginBottom: spacing.lg }}>
+              <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Add Stock</h3>
+              <p style={{ ...typography.body, color: colors.darkText, marginBottom: spacing.md }}><strong>Part:</strong> {addStockPart.part_name}</p>
+              <p style={{ ...typography.body, color: colors.darkText, marginBottom: spacing.lg }}><strong>Current Stock:</strong> {addStockPart.current_stock}</p>
 
-              <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
-                <input
-                  type="number"
-                  placeholder="Quantity to add"
-                  value={addQty}
-                  onChange={(e) => setAddQty(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Note"
-                  value={addNote}
-                  onChange={(e) => setAddNote(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <button
-                  onClick={handleSaveAddStock}
-                  style={{
-                    padding: "10px 16px",
-                    backgroundColor: "#16a34a",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Save Add Stock
-                </button>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: spacing.lg }}>
+                <Input type="number" placeholder="Quantity to add" value={addQty} onChange={(e) => setAddQty(e.target.value)} />
+                <Input type="text" placeholder="Note" value={addNote} onChange={(e) => setAddNote(e.target.value)} />
               </div>
-            </div>
+
+              <Button variant="success" size="md" onClick={handleSaveAddStock} style={{ marginTop: spacing.lg }}>Save Add Stock</Button>
+            </Card>
           )}
 
-          <div
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              marginTop: "20px"
-            }}
-          >
+          <Card style={{ marginBottom: spacing.xxxl, overflowX: 'auto' }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Part Code</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Part Name</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Category</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Stock</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Min Stock</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Location</th>
-                  <th style={{ textAlign: "left", padding: "10px" }}>Action</th>
+                <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Part Code</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Part Name</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Category</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Stock</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Min Stock</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Location</th>
+                  <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Action</th>
                 </tr>
               </thead>
 
@@ -618,136 +583,167 @@ function FactoryDetailPage() {
                   <tr
                     key={part.id}
                     style={{
-                      backgroundColor:
-                        part.current_stock <= part.min_stock ? "#ffe5e5" : "white"
+                      backgroundColor: part.current_stock <= part.min_stock ? '#fee2e2' : colors.white,
+                      borderBottom: `1px solid ${colors.border}`
                     }}
                   >
-                    <td style={{ padding: "10px" }}>{part.part_code}</td>
-                    <td style={{ padding: "10px" }}>{part.part_name}</td>
-                    <td style={{ padding: "10px" }}>{part.category}</td>
-                    <td style={{ padding: "10px" }}>{part.current_stock}</td>
-                    <td style={{ padding: "10px" }}>{part.min_stock}</td>
-                    <td style={{ padding: "10px" }}>{part.location}</td>
-
-                    <td style={{ padding: "10px" }}>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{part.part_code}</td>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>
                       <button
-                        onClick={() => openUsePartForm(part)}
+                        type="button"
+                        onClick={() => setPreviewPart(part)}
                         style={{
-                          padding: "6px 12px",
-                          backgroundColor: "#dc2626",
-                          color: "white",
+                          padding: 0,
+                          margin: 0,
                           border: "none",
-                          borderRadius: "6px",
+                          background: "transparent",
+                          color: colors.primary,
                           cursor: "pointer",
-                          marginRight: "8px"
+                          textAlign: "left",
+                          textDecoration: "underline",
+                          fontSize: "inherit",
+                          fontFamily: "inherit"
                         }}
                       >
-                        Use
+                        {part.part_name}
                       </button>
+                    </td>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{part.category}</td>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}><strong>{part.current_stock}</strong></td>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{part.min_stock}</td>
+                    <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{part.location}</td>
 
-                      <button
-                        onClick={() => openAddStockForm(part)}
-                        style={{
-                          padding: "6px 12px",
-                          backgroundColor: "#16a34a",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        Add
-                      </button>
+                    <td style={{ padding: spacing.md }}>
+                      <Button variant="danger" size="sm" onClick={() => openUsePartForm(part)} style={{ marginRight: spacing.xs }}>Use</Button>
+                      <Button variant="success" size="sm" onClick={() => openAddStockForm(part)}>Add</Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
+          {previewPart && previewPartData && (
+            <div
+              onClick={() => setPreviewPart(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.55)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+                padding: spacing.lg
+              }}
+            >
+              <div
+                onClick={(event) => event.stopPropagation()}
+                style={{
+                  width: "min(560px, 100%)",
+                  backgroundColor: colors.white,
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.lg,
+                  padding: spacing.xl
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md }}>
+                  <h3 style={{ margin: 0, ...typography.cardTitle, color: colors.darkText }}>{previewPart.part_name}</h3>
+                  <Button variant="secondary" size="sm" onClick={() => setPreviewPart(null)}>Close</Button>
+                </div>
+                {previewPartData.imageUrl ? (
+                  <img
+                    src={previewPartData.imageUrl}
+                    alt={previewPart.part_name}
+                    style={{
+                      width: "100%",
+                      maxHeight: "260px",
+                      objectFit: "cover",
+                      borderRadius: borderRadius.md,
+                      marginBottom: spacing.md
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "180px",
+                      borderRadius: borderRadius.md,
+                      border: `1px dashed ${colors.border}`,
+                      backgroundColor: colors.background,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: colors.lightText,
+                      marginBottom: spacing.md
+                    }}
+                  >
+                    No image available
+                  </div>
+                )}
+                <p style={{ margin: `0 0 ${spacing.sm} 0`, ...typography.body, color: colors.darkText }}>
+                  <strong>Description:</strong> {previewPartData.description}
+                </p>
+                <p style={{ margin: 0, ...typography.body, color: colors.mediumText }}>
+                  <strong>Measurement:</strong> {previewPartData.measurement}
+                </p>
+              </div>
+            </div>
+          )}
 
-          <h2 style={{ marginTop: "40px" }}>Recent Stock Transactions</h2>
+          <h2 style={{ ...typography.sectionTitle, margin: `${spacing.xl} 0 ${spacing.lg} 0`, color: colors.darkText, borderBottom: `1px solid ${colors.border}`, paddingBottom: spacing.md }}>Recent Stock Transactions</h2>
 
-          <div
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              marginTop: "20px"
-            }}
-          >
+          <Card style={{ marginBottom: spacing.xxxl, overflowX: 'auto' }}>
             {transactions.length === 0 ? (
-              <p>No transactions found.</p>
+              <p style={{ ...typography.body, color: colors.lightText }}>No transactions found.</p>
             ) : (
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Part Name</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Machine</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Type</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Qty</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Note</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>By</th>
+                  <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Part Name</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Machine</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Type</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Qty</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Note</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>By</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction.id}>
-                      <td style={{ padding: "10px" }}>{getPartName(transaction.part_id)}</td>
-                      <td style={{ padding: "10px" }}>{getMachineCode(transaction.machine_id)}</td>
-                      <td style={{ padding: "10px" }}>{transaction.transaction_type}</td>
-                      <td style={{ padding: "10px" }}>{transaction.qty}</td>
-                      <td style={{ padding: "10px" }}>{transaction.note}</td>
-                      <td style={{ padding: "10px" }}>{transaction.created_by}</td>
+                    <tr key={transaction.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{getPartName(transaction.part_id)}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{getMachineCode(transaction.machine_id)}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}><strong>{transaction.transaction_type}</strong></td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{transaction.qty}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{transaction.note}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{transaction.created_by}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
-          </div>
+          </Card>
 
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginTop: "40px"
+              marginBottom: spacing.lg
             }}
           >
-            <h2>Maintenance History</h2>
-
-            <button
-              onClick={() => setShowMaintenanceForm(!showMaintenanceForm)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#7c3aed",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer"
-              }}
-            >
-              Add Maintenance Log
-            </button>
+            <h2 style={{ ...typography.sectionTitle, margin: 0, color: colors.darkText, borderBottom: `1px solid ${colors.border}`, paddingBottom: spacing.md, flex: 1 }}>Maintenance History</h2>
+            <Button variant="maintenance" size="md" onClick={() => setShowMaintenanceForm(!showMaintenanceForm)}>Add Log</Button>
           </div>
 
           {showMaintenanceForm && (
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "10px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                marginTop: "20px"
-              }}
-            >
-              <h3>Add Maintenance Log</h3>
+            <Card style={{ marginBottom: spacing.lg }}>
+              <h3 style={{ ...typography.cardTitle, margin: `0 0 ${spacing.lg} 0`, color: colors.darkText }}>Add Maintenance Log</h3>
 
-              <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: spacing.lg }}>
                 <select
                   value={maintenanceMachineId}
                   onChange={(e) => setMaintenanceMachineId(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+                  style={{ padding: spacing.md, borderRadius: borderRadius.md, border: `1px solid ${colors.border}`, fontSize: '0.875rem' }}
                 >
                   <option value="">Select Machine</option>
                   {machines.map((machine) => (
@@ -756,98 +752,51 @@ function FactoryDetailPage() {
                     </option>
                   ))}
                 </select>
-
-                <input
-                  type="text"
-                  placeholder="Issue Title"
-                  value={issueTitle}
-                  onChange={(e) => setIssueTitle(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Symptom"
-                  value={symptom}
-                  onChange={(e) => setSymptom(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Action Taken"
-                  value={actionTaken}
-                  onChange={(e) => setActionTaken(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Result"
-                  value={result}
-                  onChange={(e) => setResult(e.target.value)}
-                  style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-
-                <button
-                  onClick={handleSaveMaintenance}
-                  style={{
-                    padding: "10px 16px",
-                    backgroundColor: "#7c3aed",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Save Maintenance Log
-                </button>
+                <Input type="text" placeholder="Issue Title" value={issueTitle} onChange={(e) => setIssueTitle(e.target.value)} />
+                <Input type="text" placeholder="Symptom" value={symptom} onChange={(e) => setSymptom(e.target.value)} />
+                <Input type="text" placeholder="Action Taken" value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} />
+                <Input type="text" placeholder="Result" value={result} onChange={(e) => setResult(e.target.value)} />
               </div>
-            </div>
+
+              <Button variant="maintenance" size="md" onClick={handleSaveMaintenance} style={{ marginTop: spacing.lg }}>Save Maintenance Log</Button>
+            </Card>
           )}
 
-          <div
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              marginTop: "20px"
-            }}
-          >
+          <Card style={{ overflowX: 'auto' }}>
             {maintenanceLogs.length === 0 ? (
-              <p>No maintenance logs found.</p>
+              <p style={{ ...typography.body, color: colors.lightText }}>No maintenance logs found.</p>
             ) : (
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Machine</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Issue</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Symptom</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Action</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Result</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>By</th>
+                  <tr style={{ backgroundColor: colors.background, borderBottom: `2px solid ${colors.border}` }}>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Machine</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Issue</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Symptom</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Action</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>Result</th>
+                    <th style={{ textAlign: "left", padding: spacing.md, ...typography.body, fontWeight: '600', color: colors.darkText }}>By</th>
                   </tr>
                 </thead>
                 <tbody>
                   {maintenanceLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td style={{ padding: "10px" }}>{getMachineCode(log.machine_id)}</td>
-                      <td style={{ padding: "10px" }}>{log.issue_title}</td>
-                      <td style={{ padding: "10px" }}>{log.symptom}</td>
-                      <td style={{ padding: "10px" }}>{log.action_taken}</td>
-                      <td style={{ padding: "10px" }}>{log.result}</td>
-                      <td style={{ padding: "10px" }}>{log.created_by}</td>
+                    <tr key={log.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{getMachineCode(log.machine_id)}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{log.issue_title}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{log.symptom}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{log.action_taken}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{log.result}</td>
+                      <td style={{ padding: spacing.md, ...typography.small, color: colors.darkText }}>{log.created_by}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
-          </div>
+          </Card>
         </>
       )}
-    </div>
+    </AppLayout>
   );
 }
 
 export default FactoryDetailPage;
+

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import AppLayout from "../components/AppLayout";
+import Input from "../components/Input";
+import Card from "../components/Card";
+import { colors, spacing, typography } from "../constants/designTokens";
 
 function TroubleshootPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (searchQuery.trim().length > 2) {
@@ -36,65 +38,34 @@ function TroubleshootPage() {
   }
 
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <button
-        onClick={() => navigate("/")}
-        style={{
-          marginBottom: "20px",
-          padding: "10px 16px",
-          backgroundColor: "#2563eb",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer"
-        }}
-      >
-        Back to Factories
-      </button>
+    <AppLayout>
+      <h2 style={{ ...typography.sectionTitle, margin: `0 0 ${spacing.sm} 0`, color: colors.darkText }}>Troubleshooting Search</h2>
+      <p style={{ margin: `0 0 ${spacing.xl} 0`, ...typography.body, color: colors.lightText }}>Search past maintenance issues by title, symptom, or action taken.</p>
 
-      <h1>Troubleshooting Search</h1>
-      <p>Search past maintenance issues by title, symptom, or action taken.</p>
-
-      <input
+      <Input
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Enter search term..."
-        style={{
-          width: "400px",
-          padding: "15px",
-          fontSize: "18px",
-          borderRadius: "8px",
-          border: "1px solid #ccc",
-          marginBottom: "20px"
-        }}
+        style={{ width: "400px", marginBottom: spacing.xl }}
       />
 
       <div>
         {results.length === 0 && searchQuery.trim().length > 2 && (
-          <p>No results found.</p>
+          <p style={{ color: colors.lightText, ...typography.body }}>No results found.</p>
         )}
         {results.map((log) => (
-          <div
-            key={log.id}
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              marginBottom: "20px"
-            }}
-          >
-            <p><strong>Machine Code:</strong> {log.machines?.machine_code || "N/A"}</p>
-            <p><strong>Issue Title:</strong> {log.issue_title}</p>
-            <p><strong>Symptom:</strong> {log.symptom}</p>
-            <p><strong>Action Taken:</strong> {log.action_taken}</p>
-            <p><strong>Result:</strong> {log.result}</p>
-            <p><strong>Created At:</strong> {new Date(log.created_at).toLocaleDateString()}</p>
-          </div>
+          <Card key={log.id} style={{ marginBottom: spacing.lg }}>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Machine Code:</strong> {log.machines?.machine_code || "N/A"}</p>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Issue Title:</strong> {log.issue_title}</p>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Symptom:</strong> {log.symptom}</p>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Action Taken:</strong> {log.action_taken}</p>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Result:</strong> {log.result}</p>
+            <p style={{ margin: spacing.sm, ...typography.body, color: colors.lightText }}><strong>Created At:</strong> {new Date(log.created_at).toLocaleDateString()}</p>
+          </Card>
         ))}
       </div>
-    </div>
+    </AppLayout>
   );
 }
 
