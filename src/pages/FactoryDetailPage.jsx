@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../contexts/AuthContext";
 import AppLayout from "../components/AppLayout";
 import { useDeviceType } from "../hooks/useDeviceType";
 import Input from "../components/Input";
@@ -53,10 +54,12 @@ function StatusBadge({ status }) {
 
 function FactoryDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const device = useDeviceType();
   const isDesktop = device === 'desktop';
   const isMobile = device === 'mobile';
   const { t } = useTranslation();
+  const { role } = useAuth();
 
   const [factory, setFactory] = useState(null);
   const [machines, setMachines] = useState([]);
@@ -103,6 +106,8 @@ function FactoryDetailPage() {
   const [editLocation, setEditLocation] = useState("");
   const [editQrCode, setEditQrCode] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editImageFile, setEditImageFile] = useState(null);
+  const [editImagePreview, setEditImagePreview] = useState("");
 
   const [consumables, setConsumables] = useState([]);
   const [consumableSearch, setConsumableSearch] = useState("");
@@ -183,25 +188,54 @@ function FactoryDetailPage() {
     setEditingPart(part); setEditPartCode(part.part_code || ""); setEditPartName(part.part_name || "");
     setEditCategory(part.category || ""); setEditCurrentStock(String(part.current_stock ?? ""));
     setEditMinStock(String(part.min_stock ?? "")); setEditLocation(part.location || ""); setEditQrCode(part.qr_code || "");
+    setEditImageFile(null); setEditImagePreview(part.image_url || "");
     setShowAddPartForm(false); setShowUsePartForm(false); setShowAddStockForm(false);
   }
   function closeEditPartForm() {
     setEditingPart(null); setEditPartCode(""); setEditPartName(""); setEditCategory("");
     setEditCurrentStock(""); setEditMinStock(""); setEditLocation(""); setEditQrCode("");
+    setEditImageFile(null); setEditImagePreview("");
   }
+
   async function handleSaveEditPart() {
     if (!editPartCode || !editPartName) { alert("Please enter Part Code and Part Name"); return; }
     setIsSavingEdit(true);
+
+    let imageUrl = editingPart.image_url || null;
+
+    if (editImageFile) {
+      const fileExt = editImageFile.name.split('.').pop();
+      const fileName = `part-${editingPart.id}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('parts-images')
+        .upload(fileName, editImageFile, { upsert: true });
+
+      if (uploadError) {
+        alert("Failed to upload image");
+        setIsSavingEdit(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('parts-images')
+        .getPublicUrl(fileName);
+
+      imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    }
+
     const { error } = await supabase.from("parts").update({
       part_code: editPartCode, part_name: editPartName, category: editCategory,
       current_stock: Number(editCurrentStock) || 0, min_stock: Number(editMinStock) || 0,
       location: editLocation, qr_code: editQrCode || null,
+      image_url: imageUrl,
     }).eq("id", editingPart.id);
+
     setIsSavingEdit(false);
     if (error) { alert("Failed to update part"); return; }
     alert("Part updated successfully");
     closeEditPartForm(); fetchParts();
   }
+
   function openUsePartForm(part) {
     setSelectedPart(part); setSelectedMachineId(""); setUseQty(""); setUseNote(""); setShowUsePartForm(true);
   }
@@ -437,11 +471,24 @@ function FactoryDetailPage() {
             gap: spacing.md, marginBottom: spacing.xxxl,
           }}>
             {machines.map((machine) => (
-              <div key={machine.id} style={{
-                backgroundColor: colors.white, borderRadius: '10px', padding: spacing.md,
-                border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              }}>
-                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem', color: colors.darkText }}>{machine.machine_name}</p>
+              <div
+                key={machine.id}
+                onClick={() => navigate(`/factory/${id}/machine/${machine.id}`)}
+                style={{
+                  backgroundColor: colors.white, borderRadius: '10px', padding: spacing.md,
+                  border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  cursor: 'pointer', transition: '150ms ease-in-out',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem', color: colors.primary }}>{machine.machine_name}</p>
                 <p style={{ margin: '4px 0', fontSize: '0.8rem', color: colors.mediumText }}>{machine.machine_code}</p>
                 <StatusBadge status={machine.status} />
               </div>
@@ -493,6 +540,49 @@ function FactoryDetailPage() {
                 <Input type="number" placeholder={t('min_stock')} value={editMinStock} onChange={(e) => setEditMinStock(e.target.value)} />
                 <Input type="text" placeholder={t('location')} value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
                 <Input type="text" placeholder="QR Code" value={editQrCode} onChange={(e) => setEditQrCode(e.target.value)} />
+                {role === 'admin' && (
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: colors.lightText, display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                      Part Image
+                    </label>
+                    {editImagePreview && (
+                      <div style={{ position: 'relative', marginBottom: '10px' }}>
+                        <img
+                          src={editImagePreview}
+                          alt="Part preview"
+                          style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '10px', border: `1px solid ${colors.border}` }}
+                        />
+                        <button
+                          onClick={() => { setEditImageFile(null); setEditImagePreview(""); }}
+                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >✕</button>
+                      </div>
+                    )}
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      padding: '10px 16px', borderRadius: '8px', cursor: 'pointer',
+                      border: `2px dashed ${colors.primary}`,
+                      backgroundColor: '#EFF6FF', color: colors.primary,
+                      fontSize: '0.85rem', fontWeight: '600', transition: '150ms ease-in-out',
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#DBEAFE'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
+                    >
+                      📷 {editImagePreview ? 'Change Image' : 'Upload Image'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) { setEditImageFile(file); setEditImagePreview(URL.createObjectURL(file)); }
+                        }}
+                      />
+                    </label>
+                    {editImageFile && (
+                      <p style={{ margin: '6px 0 0 0', fontSize: '0.75rem', color: colors.lightText }}>
+                        ✅ {editImageFile.name}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.lg }}>
                 <Button variant="primary" size="md" onClick={handleSaveEditPart} disabled={isSavingEdit}>
@@ -920,7 +1010,7 @@ function FactoryDetailPage() {
                   <Button variant="secondary" size="sm" onClick={() => setPreviewPart(null)}>{t('close')}</Button>
                 </div>
                 {previewPartData.imageUrl ? (
-                  <img src={previewPartData.imageUrl} alt={previewPart.part_name} style={{ width: '100%', maxHeight: '260px', objectFit: 'cover', borderRadius: borderRadius.md, marginBottom: spacing.md }} />
+                  <img src={`${previewPartData.imageUrl}`} alt={previewPart.part_name} style={{ width: '100%', maxHeight: '260px', objectFit: 'cover', borderRadius: borderRadius.md, marginBottom: spacing.md }} />
                 ) : (
                   <div style={{ width: '100%', height: '160px', borderRadius: borderRadius.md, border: `1px dashed ${colors.border}`, backgroundColor: colors.background, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.lightText, marginBottom: spacing.md }}>No image available</div>
                 )}

@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import FactoryListPage from "./pages/FactoryListPage";
 import FactoryDetailPage from "./pages/FactoryDetailPage";
+import MachinePage from "./pages/MachinePage";
 import ScanPage from "./pages/ScanPage";
 import TroubleshootPage from "./pages/TroubleshootPage";
 import ConsumablesPage from "./pages/ConsumablesPage";
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance']}><FactoryListPage /></ProtectedRoute>} />
         <Route path="/factory/:id" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance', 'operator']}><FactoryDetailPage /></ProtectedRoute>} />
+        <Route path="/factory/:factoryId/machine/:machineId" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance', 'operator']}><MachinePage /></ProtectedRoute>} />
         <Route path="/scan" element={<ProtectedRoute allowedRoles={['admin', 'maintenance', 'operator']}><ScanPage /></ProtectedRoute>} />
         <Route path="/consumables" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance', 'operator']}><ConsumablesPage /></ProtectedRoute>} />
         <Route path="/troubleshoot" element={<ProtectedRoute allowedRoles={['admin', 'maintenance']}><TroubleshootPage /></ProtectedRoute>} />
