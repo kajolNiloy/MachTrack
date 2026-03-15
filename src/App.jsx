@@ -7,6 +7,8 @@ import ScanPage from "./pages/ScanPage";
 import TroubleshootPage from "./pages/TroubleshootPage";
 import ConsumablesPage from "./pages/ConsumablesPage";
 import LoginPage from "./pages/LoginPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
         <Route path="/scan" element={<ProtectedRoute allowedRoles={['admin', 'maintenance', 'operator']}><ScanPage /></ProtectedRoute>} />
         <Route path="/consumables" element={<ProtectedRoute allowedRoles={['admin', 'viewer', 'maintenance', 'operator']}><ConsumablesPage /></ProtectedRoute>} />
         <Route path="/troubleshoot" element={<ProtectedRoute allowedRoles={['admin', 'maintenance']}><TroubleshootPage /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagementPage /></ProtectedRoute>} />
       </Routes>
     </>
   );
